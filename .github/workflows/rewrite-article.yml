@@ -1,0 +1,112 @@
+name: Rewrite Article
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_file:
+        description: '待改写的 Markdown 文件路径，例如 articles/my-article.md'
+        required: true
+        type: string
+      style:
+        description: '改写风格'
+        required: true
+        type: choice
+        options:
+          - lu-xun
+          - ma-sanli
+          - xu-zhimo
+
+permissions:
+  contents: write
+
+jobs:
+  rewrite-article:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate source file
+        run: |
+          test -f "${{ github.event.inputs.source_file }}"
+
+      - name: Setup Codex CLI
+        run: npm install -g @openai/codex
+
+      - name: Configure Codex provider
+        run: |
+          mkdir -p ~/.codex
+          cat > ~/.codex/config.toml << 'EOF'
+          model_provider = "custom"
+          model = "gpt-5.4"
+
+          [model_providers.custom]
+          name = "Custom Proxy"
+          base_url = "${{ secrets.CODEX_BASE_URL }}"
+          env_key = "CODEX_API_KEY"
+          EOF
+
+      - name: Install selected writer skill
+        run: |
+          mkdir -p ~/.codex/skills
+          case "${{ github.event.inputs.style }}" in
+            lu-xun)
+              cp -r lu-xun-writer ~/.codex/skills/lu-xun-writer
+              ;;
+            ma-sanli)
+              cp -r ma-sanli-writer ~/.codex/skills/ma-sanli-writer
+              ;;
+            xu-zhimo)
+              cp -r xu-zhimo-writer ~/.codex/skills/xu-zhimo-writer
+              ;;
+            *)
+              echo "Unsupported style: ${{ github.event.inputs.style }}" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Rewrite article with Codex
+        env:
+          CODEX_API_KEY: ${{ secrets.CODEX_API_KEY }}
+        run: |
+          mkdir -p rewritten
+          source_path="${{ github.event.inputs.source_file }}"
+          source_name="$(basename "$source_path" .md)"
+          output_path="rewritten/${{ github.event.inputs.style }}-${source_name}.md"
+          case "${{ github.event.inputs.style }}" in
+            lu-xun)
+              skill_name="lu-xun-writer"
+              ;;
+            ma-sanli)
+              skill_name="ma-sanli-writer"
+              ;;
+            xu-zhimo)
+              skill_name="xu-zhimo-writer"
+              ;;
+          esac
+          prompt_file="$(mktemp)"
+          cat > "$prompt_file" <<EOF
+          请使用已安装的 writer skill，将仓库中的 Markdown 素材改写成一篇完整的中文公众号文章。
+
+          要求：
+          1. 必须使用本次安装的 \`${skill_name}\` skill 对应风格完成改写。
+          2. 只基于提供的素材改写，不要编造事实。
+          3. 输出必须是最终 Markdown 正文，不要解释过程，不要写“下面是改写结果”。
+          4. 保留文章原始信息的核心意思，但语言、结构、节奏按照目标风格重写。
+          5. 不要调用 shell，不要修改仓库文件。
+
+          风格：${{ github.event.inputs.style }}
+          素材文件：${{ github.event.inputs.source_file }}
+          EOF
+          codex exec \
+            --skip-git-repo-check \
+            --dangerously-bypass-approvals-and-sandbox \
+            --output-last-message "$output_path" \
+            "$(cat "$prompt_file")" < "$source_path"
+          echo "Saved rewritten article to $output_path"
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add rewritten/
+          git diff --cached --quiet || (git commit -m "Rewrite ${{ github.event.inputs.source_file }} as ${{ github.event.inputs.style }}" && git push)
