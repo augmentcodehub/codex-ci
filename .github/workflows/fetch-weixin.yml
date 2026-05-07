@@ -30,6 +30,19 @@ jobs:
       - name: Setup Codex CLI
         run: npm install -g @openai/codex
 
+      - name: Configure Codex provider
+        run: |
+          mkdir -p ~/.codex
+          cat > ~/.codex/config.toml << 'EOF'
+          model_provider = "custom"
+          model = "${{ vars.CODEX_MODEL || 'gpt-4.1' }}"
+
+          [model_providers.custom]
+          name = "Custom Proxy"
+          base_url = "${{ secrets.CODEX_BASE_URL }}"
+          env_key = "CODEX_API_KEY"
+          EOF
+
       - name: Install skills
         run: |
           mkdir -p ~/.codex/skills
@@ -37,11 +50,10 @@ jobs:
 
       - name: Fetch article via Codex
         env:
-          OPENAI_API_KEY: ${{ secrets.CODEX_API_KEY }}
-          OPENAI_BASE_URL: ${{ secrets.CODEX_BASE_URL }}
+          CODEX_API_KEY: ${{ secrets.CODEX_API_KEY }}
         run: |
           mkdir -p articles
-          codex exec --full-auto \
+          codex exec --sandbox workspace-write \
             "Fetch this WeChat article and save as markdown to the articles/ folder: ${{ github.event.inputs.url }}"
 
       - name: Commit and push
