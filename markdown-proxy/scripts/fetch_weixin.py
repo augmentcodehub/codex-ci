@@ -5,6 +5,14 @@ import sys
 import json
 import asyncio
 import re
+from pathlib import Path
+
+
+def slugify_filename(value: str, fallback: str = "wechat-article") -> str:
+    """Create a filesystem-safe filename stem from a title."""
+    cleaned = re.sub(r"[\\/:*?\"<>|]+", "-", value or "")
+    cleaned = re.sub(r"\s+", " ", cleaned).strip().strip(".")
+    return cleaned or fallback
 
 async def fetch_weixin_article(url: str) -> dict:
     """Fetch and parse a WeChat article, return dict with title, author, publish_time, content."""
@@ -124,13 +132,32 @@ def format_as_markdown(result: dict) -> str:
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: fetch_weixin.py <weixin_url> [--json]", file=sys.stderr)
+        print("Usage: fetch_weixin.py <weixin_url> [--json] [--output-dir DIR]", file=sys.stderr)
         sys.exit(1)
 
     url = sys.argv[1]
     use_json = "--json" in sys.argv
+    output_dir = None
+    if "--output-dir" in sys.argv:
+        output_index = sys.argv.index("--output-dir")
+        if output_index + 1 >= len(sys.argv):
+            print("--output-dir requires a value", file=sys.stderr)
+            sys.exit(1)
+        output_dir = Path(sys.argv[output_index + 1])
 
     result = asyncio.run(fetch_weixin_article(url))
+
+    if "error" in result:
+        print(result["error"], file=sys.stderr)
+        sys.exit(1)
+
+    if output_dir is not None:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        filename = slugify_filename(result.get("title", "")) + ".md"
+        output_path = output_dir / filename
+        output_path.write_text(format_as_markdown(result), encoding="utf-8")
+        print(str(output_path))
+        sys.exit(0)
 
     if use_json:
         print(json.dumps(result, ensure_ascii=False, indent=2))

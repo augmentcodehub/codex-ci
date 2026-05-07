@@ -27,34 +27,12 @@ jobs:
           pip install playwright beautifulsoup4 lxml
           playwright install chromium
 
-      - name: Setup Codex CLI
-        run: npm install -g @openai/codex
-
-      - name: Configure Codex provider
+      - name: Fetch article
         run: |
-          mkdir -p ~/.codex
-          cat > ~/.codex/config.toml << 'EOF'
-          model_provider = "custom"
-          model = "gpt-5.4"
-
-          [model_providers.custom]
-          name = "Custom Proxy"
-          base_url = "${{ secrets.CODEX_BASE_URL }}"
-          env_key = "CODEX_API_KEY"
-          EOF
-
-      - name: Install skills
-        run: |
-          mkdir -p ~/.codex/skills
-          cp -r markdown-proxy ~/.codex/skills/markdown-proxy
-
-      - name: Fetch article via Codex
-        env:
-          CODEX_API_KEY: ${{ secrets.CODEX_API_KEY }}
-        run: |
-          mkdir -p articles
-          codex exec --sandbox workspace-write \
-            "Fetch this WeChat article and save as markdown to the articles/ folder: ${{ github.event.inputs.url }}"
+          output_path=$(python markdown-proxy/scripts/fetch_weixin.py \
+            "${{ github.event.inputs.url }}" \
+            --output-dir articles)
+          echo "Saved article to ${output_path}"
 
       - name: Commit and push
         run: |
