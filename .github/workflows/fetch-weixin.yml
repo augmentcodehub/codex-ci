@@ -35,7 +35,7 @@ jobs:
           mkdir -p ~/.codex
           cat > ~/.codex/config.toml << 'EOF'
           model_provider = "custom"
-          model = "${{ vars.CODEX_MODEL || 'gpt-4.1' }}"
+          model = "gpt-5.4"
 
           [model_providers.custom]
           name = "Custom Proxy"
