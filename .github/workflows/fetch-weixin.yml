@@ -1,0 +1,52 @@
+name: Fetch WeChat Article
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: '微信公众号文章 URL'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-article:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install playwright beautifulsoup4 lxml
+          playwright install chromium
+
+      - name: Setup Codex CLI
+        run: npm install -g @openai/codex
+
+      - name: Install skills
+        run: |
+          mkdir -p ~/.codex/skills
+          cp -r markdown-proxy ~/.codex/skills/markdown-proxy
+
+      - name: Fetch article via Codex
+        env:
+          OPENAI_API_KEY: ${{ secrets.CODEX_API_KEY }}
+          OPENAI_BASE_URL: ${{ secrets.CODEX_BASE_URL }}
+        run: |
+          mkdir -p articles
+          codex exec --full-auto \
+            "Fetch this WeChat article and save as markdown to the articles/ folder: ${{ github.event.inputs.url }}"
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add articles/
+          git diff --cached --quiet || (git commit -m "Add article from ${{ github.event.inputs.url }}" && git push)
