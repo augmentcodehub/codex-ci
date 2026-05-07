@@ -266,5 +266,5 @@ description: |
 
 ## 参考资料
 
-风格来源：徐志摩视角Skill（`.agents/skills/xu-zhimo-perspective/SKILL.md`）。
+风格来源：徐志摩视角Skill（`skills/perspectives/xu-zhimo-perspective/SKILL.md`）。
 心智模型、表达DNA、价值观均从该Skill继承。

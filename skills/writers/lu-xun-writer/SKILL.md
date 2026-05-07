@@ -264,5 +264,5 @@ description: |
 
 ## 参考资料
 
-风格来源：鲁迅视角Skill（`.agents/skills/lu-xun-perspective/SKILL.md`）。
+风格来源：鲁迅视角Skill（`skills/perspectives/lu-xun-perspective/SKILL.md`）。
 心智模型、表达DNA、价值观均从该Skill继承。

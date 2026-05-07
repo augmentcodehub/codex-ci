@@ -50,13 +50,13 @@ jobs:
           mkdir -p ~/.codex/skills
           case "${{ github.event.inputs.style }}" in
             lu-xun)
-              cp -r lu-xun-writer ~/.codex/skills/lu-xun-writer
+              cp -r skills/writers/lu-xun-writer ~/.codex/skills/lu-xun-writer
               ;;
             ma-sanli)
-              cp -r ma-sanli-writer ~/.codex/skills/ma-sanli-writer
+              cp -r skills/writers/ma-sanli-writer ~/.codex/skills/ma-sanli-writer
               ;;
             xu-zhimo)
-              cp -r xu-zhimo-writer ~/.codex/skills/xu-zhimo-writer
+              cp -r skills/writers/xu-zhimo-writer ~/.codex/skills/xu-zhimo-writer
               ;;
             *)
               echo "Unsupported style: ${{ github.event.inputs.style }}" >&2

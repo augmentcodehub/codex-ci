@@ -29,7 +29,7 @@ jobs:
 
       - name: Fetch article
         run: |
-          output_path=$(python markdown-proxy/scripts/fetch_weixin.py \
+          output_path=$(python tools/content-fetch/fetch_weixin.py \
             "${{ github.event.inputs.url }}" \
             --output-dir articles)
           echo "Saved article to ${output_path}"

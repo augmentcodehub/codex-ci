@@ -270,5 +270,5 @@ description: |
 
 ## 参考资料
 
-风格来源：马三立视角Skill（`.kiro/skills/ma-sanli-perspective/SKILL.md`）。
+风格来源：马三立视角Skill（`skills/perspectives/ma-sanli-perspective/SKILL.md`）。
 心智模型、表达DNA、价值观均从该Skill继承。
